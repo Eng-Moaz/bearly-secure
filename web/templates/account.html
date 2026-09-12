@@ -38,7 +38,16 @@
           autocomplete="email"
           value="{{.Current.User.Email}}"
           required /></label
-      ><button type="submit">Change email</button>
+      >
+      <label>
+      	      Current Password <input
+		name="currentPassword"
+		type="password"
+		value=""
+		required
+      	      />
+      </label>
+      <button type="submit">Change email</button>
     </form>
   </article>
   <article class="card">
