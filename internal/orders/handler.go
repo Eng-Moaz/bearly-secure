@@ -76,7 +76,7 @@ func (handler *Handler) Detail(responseWriter http.ResponseWriter, request *http
 		handler.orderNotFound(responseWriter)
 		return
 	}
-	if order.ID != current.User.ID {
+	if order.UserID != current.User.ID {
 		handler.orderNotFound(responseWriter)
 		return
 	}
