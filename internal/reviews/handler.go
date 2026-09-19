@@ -3,6 +3,8 @@ package reviews
 import (
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/bootdotdev/learn-web-security/internal/accounts"
 	"github.com/bootdotdev/learn-web-security/internal/auth/sessions"
@@ -245,5 +247,12 @@ func parseRating(value string) (int64, bool) {
 }
 
 func parseBody(value string) (string, bool) {
-	return value, value != ""
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+  	  return value, false
+	}
+	if utf8.RuneCountInString(trimmed) > 1000 {
+  	  return trimmed, false
+	}
+	return trimmed, true
 }
