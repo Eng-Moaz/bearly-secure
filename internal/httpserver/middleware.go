@@ -9,6 +9,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -219,6 +220,41 @@ func fixedWindowRateLimiter(options rateLimitOptions) middleware {
 	}
 }
 
+
+func RequireTrustedSource(appOrigin string, renderer *templates.Renderer) middleware{
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
+			if request.Method == http.MethodPost {
+				if request.Header.Get("Origin") == "" {
+					rawReferer := request.Header.Get("Referer")
+					if rawReferer == "" {
+						httpx.RespondWithErrorPage(responseWriter, renderer, http.StatusForbidden, "Status Forbidden", "403 Status Forbidden")
+						return
+					}
+					parsedURL, err := url.Parse(rawReferer)
+					if err != nil {
+						httpx.RespondWithErrorPage(responseWriter, renderer, http.StatusForbidden, "Status Forbidden", "403 Status Forbidden")
+						return
+					}
+					if parsedURL.Scheme + "://" + parsedURL.Host == appOrigin{
+						next.ServeHTTP(responseWriter, request)
+						return
+					}
+					httpx.RespondWithErrorPage(responseWriter, renderer, http.StatusForbidden, "Status Forbidden", "403 Status Forbidden")
+					return
+				}
+				if request.Header.Get("Origin") != appOrigin {
+					httpx.RespondWithErrorPage(responseWriter, renderer, http.StatusForbidden, "Status Forbidden", "403 Status Forbidden")
+					return
+				}
+				next.ServeHTTP(responseWriter, request)
+				return
+			}
+			next.ServeHTTP(responseWriter, request)
+			return
+		})
+	}
+}
 
 func setRateLimitHeaders(responseWriter http.ResponseWriter, state rateLimitState) {
 	responseWriter.Header().Set("RateLimit-Limit", strconv.Itoa(state.limit))
