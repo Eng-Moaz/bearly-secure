@@ -238,6 +238,7 @@ func New(database *sql.DB, logger *logging.Logger, options Options) (*Applicatio
 		setNoSniffMiddleware,
 		RequireTrustedSource(authenticationHandler.appOrigin, renderer),
 		cspNonce,
+		setContentSecurityPolicy(),
 		recoverPanics(logger, renderer),
 	)
 	return &Application{Handler: handler, publicRoot: publicRoot}, nil

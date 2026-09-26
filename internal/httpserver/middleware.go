@@ -256,6 +256,16 @@ func RequireTrustedSource(appOrigin string, renderer *templates.Renderer) middle
 	}
 }
 
+func setContentSecurityPolicy() middleware{
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
+			responeNonce := httpx.CSPNonce(request.Context())
+			responseWriter.Header().Set("Content-Security-Policy", fmt.Sprintf("default-src 'self'; script-src 'self' 'nonce-%v'; style-src 'self'; img-src 'self' data:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'", responeNonce))
+			next.ServeHTTP(responseWriter, request)
+			return
+		})
+	}
+}
 func setRateLimitHeaders(responseWriter http.ResponseWriter, state rateLimitState) {
 	responseWriter.Header().Set("RateLimit-Limit", strconv.Itoa(state.limit))
 	responseWriter.Header().Set("RateLimit-Remaining", strconv.Itoa(state.remaining))
