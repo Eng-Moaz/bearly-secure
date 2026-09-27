@@ -54,6 +54,20 @@ func permissiveCORS(next http.Handler) http.Handler {
 	})
 }
 
+func productsCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
+		responseWriter.Header().Set("Access-Control-Allow-Origin", "*")
+		next.ServeHTTP(responseWriter, request)
+	})
+}
+
+func productsOptionsHandler(responseWriter http.ResponseWriter, request *http.Request){
+	responseWriter.Header().Set("Access-Control-Allow-Origin", "*")
+	responseWriter.Header().Set("Access-Control-Allow-Methods", "GET")
+	httpx.RespondWithJSON(responseWriter, 204, map[string]any{})
+}
+
+
 func cspNonce(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		nonceBytes := make([]byte, 16)
