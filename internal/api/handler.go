@@ -25,6 +25,21 @@ type orderItemResponse struct {
 	PriceCents  int64  `json:"price_cents"`
 }
 
+type productResponse struct {
+	ID int64 `json:"id"`
+	Name string `json:"name"`
+	Description string `json:"description"`
+	ImagePath string `json:"image_path"`
+	PriceCents int64 `json:"price_cents"`
+}
+
+type orderResponse struct {
+	ID         int64  `json:"id"`
+	Status     string `json:"status"`
+	TotalCents int64  `json:"total_cents"`
+	CreatedAt  string `json:"created_at"`
+}
+
 type Handler struct {
 	accountStore      *accounts.Store
 	orderStore        *orders.Store
@@ -51,7 +66,16 @@ func (handler *Handler) AccountOrders(responseWriter http.ResponseWriter, reques
 		handler.internalError(responseWriter, request, err)
 		return
 	}
-	httpx.RespondWithJSON(responseWriter, http.StatusOK, map[string]any{"orders": orders})
+	responseOrders := []orderResponse{}
+	for _, order := range orders {
+		responseOrders = append(responseOrders, orderResponse{
+			ID: order.ID,
+			Status: order.Status,
+			TotalCents: order.TotalCents,
+			CreatedAt: order.CreatedAt,
+		})
+	}
+	httpx.RespondWithJSON(responseWriter, http.StatusOK, map[string]any{"orders": responseOrders})
 }
 
 func (handler *Handler) Order(responseWriter http.ResponseWriter, request *http.Request) {
@@ -82,20 +106,36 @@ func (handler *Handler) Order(responseWriter http.ResponseWriter, request *http.
 		handler.internalError(responseWriter, request, err)
 		return
 	}
+	orderResp := orderResponse{
+		ID: order.ID,
+		Status: order.Status,
+		TotalCents: order.TotalCents,
+		CreatedAt: order.CreatedAt,
+	}
 	itemResponses := make([]orderItemResponse, 0, len(items))
 	for _, item := range items {
 		itemResponses = append(itemResponses, orderItemResponse{ProductID: item.ProductID, ProductName: item.ProductName, Quantity: item.Quantity, PriceCents: item.PriceCents})
 	}
-	httpx.RespondWithJSON(responseWriter, http.StatusOK, map[string]any{"order": order, "items": itemResponses})
+	httpx.RespondWithJSON(responseWriter, http.StatusOK, map[string]any{"order": orderResp, "items": itemResponses})
 }
 
 func (handler *Handler) Products(responseWriter http.ResponseWriter, request *http.Request) {
-	products, err := handler.productStore.ListAllProducts(request.Context())
+	products, err := handler.productStore.ListProducts(request.Context(), 1000)
 	if err != nil {
 		handler.internalError(responseWriter, request, err)
 		return
 	}
-	httpx.RespondWithJSON(responseWriter, http.StatusOK, map[string]any{"products": products})
+	responseProducts := []productResponse{}
+	for _, product := range products {
+		responseProducts = append(responseProducts, productResponse{
+			ID: product.ID,
+			Name: product.Name,
+			Description: product.Description,
+			ImagePath: product.ImagePath,
+			PriceCents: product.PriceCents,
+		})
+	}
+	httpx.RespondWithJSON(responseWriter, http.StatusOK, map[string]any{"products": responseProducts})
 }
 
 func (handler *Handler) WarehouseOrders(responseWriter http.ResponseWriter, request *http.Request) {
