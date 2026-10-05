@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -36,17 +38,43 @@ type Config struct {
 	MaxPublicProductResults    int
 	ActiveEncryptionKeyVersion string
 	EncryptionKeys             map[string][32]byte
+	DownloadSigningKey	   [32]byte
 }
 
 type AttackerLabConfig struct {
 	Port int
 }
 
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if err == nil {
+		return true	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false 	}
+	return false 
+}
+
 func Load(workingDirectory string) (Config, error) {
+	fullPath := filepath.Join(workingDirectory, ".env")
+	if !fileExists(fullPath) {
+		return Parse(processEnvironment(), workingDirectory)
+	}
+	err := godotenv.Load(fullPath)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to load .env file: %w", err)
+	}
 	return Parse(processEnvironment(), workingDirectory)
 }
 
 func LoadAttackerLab(workingDirectory string) (AttackerLabConfig, error) {
+	fullPath := filepath.Join(workingDirectory, ".env")
+	if !fileExists(fullPath) {
+		return ParseAttackerLab(processEnvironment())
+	}
+	err := godotenv.Load(fullPath)
+	if err != nil {
+		return AttackerLabConfig{}, fmt.Errorf("failed to load .env file: %w", err)
+	}
 	return ParseAttackerLab(processEnvironment())
 }
 
@@ -82,6 +110,17 @@ func Parse(environment map[string]string, workingDirectory string) (Config, erro
 	if err != nil {
 		return Config{}, err
 	}
+	downloadSigningKey, err := requireEnvironmentVariable(environment, "DOWNLOAD_SIGNING_KEY")
+	if err != nil {
+		return Config{}, err
+	}
+	decoded, err := hex.DecodeString(downloadSigningKey)
+	if err != nil {
+		return Config{}, err
+	}
+	if len(decoded) != 32 {
+		return Config{}, fmt.Errorf("Must be exactly 64 hexadecimal characters")
+	}
 
 	return Config{
 		PawPalAPIKey:               pawPalKey,
@@ -94,6 +133,7 @@ func Parse(environment map[string]string, workingDirectory string) (Config, erro
 		MaxPublicProductResults:    MaxPublicProductResults,
 		ActiveEncryptionKeyVersion: activeEncryptionKeyVersion,
 		EncryptionKeys:             encryptionKeys,
+		DownloadSigningKey:	    [32]byte(decoded),
 	}, nil
 }
 
