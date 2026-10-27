@@ -7,3 +7,5 @@ data/uploads/*
 data/bulk-tax-documents/
 .env*
 !.env.example
+
+/go1.27.*.linux-amd64.tar.gz
