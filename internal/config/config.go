@@ -39,6 +39,7 @@ type Config struct {
 	ActiveEncryptionKeyVersion string
 	EncryptionKeys             map[string][32]byte
 	DownloadSigningKey	   [32]byte
+	TrustedProxyHops	   int
 }
 
 type AttackerLabConfig struct {
@@ -121,6 +122,16 @@ func Parse(environment map[string]string, workingDirectory string) (Config, erro
 	if len(decoded) != 32 {
 		return Config{}, fmt.Errorf("Must be exactly 64 hexadecimal characters")
 	}
+	trustedProxyHopsStr := environment["TRUST_PROXY_HOPS"]
+	var trustedProxyHops int
+	if trustedProxyHopsStr == "" {
+		trustedProxyHops = 0
+	} else {
+		trustedProxyHops, err = parseNonNegativeInteger(trustedProxyHopsStr, "TRUST_PROXY_HOPS")
+		if err != nil {
+			return Config{}, err
+		}
+	}
 
 	return Config{
 		PawPalAPIKey:               pawPalKey,
@@ -134,6 +145,7 @@ func Parse(environment map[string]string, workingDirectory string) (Config, erro
 		ActiveEncryptionKeyVersion: activeEncryptionKeyVersion,
 		EncryptionKeys:             encryptionKeys,
 		DownloadSigningKey:	    [32]byte(decoded),
+		TrustedProxyHops: 	    trustedProxyHops,
 	}, nil
 }
 
